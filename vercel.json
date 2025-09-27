@@ -3,7 +3,6 @@
     { "source": "/api/one-piece/cards", "destination": "/api/index/cards" },
     { "source": "/api/one-piece/card/:value", "destination": "/api/index/card/:value" },
     { "source": "/api/one-piece/sets", "destination": "/api/index/sets" },
-    { "source": "/api/one-piece", "destination": "/api/index" },
     { "source": "/", "destination": "/api/index" }
   ]
 }
