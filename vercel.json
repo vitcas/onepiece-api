@@ -1,8 +1,1 @@
-{
-  "rewrites": [
-    { "source": "/api/one-piece/cards", "destination": "/api/index/cards" },
-    { "source": "/api/one-piece/card/:value", "destination": "/api/index/card/:value" },
-    { "source": "/api/one-piece/sets", "destination": "/api/index/sets" },
-    { "source": "/", "destination": "/api/index" }
-  ]
-}
+{  "rewrites": [    { "source": "/(.*)", "destination": "/api/index" }  ]}
