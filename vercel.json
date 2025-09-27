@@ -1,0 +1,14 @@
+{
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.11",
+      "memory": 512,
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    { "source": "/api/one-piece/cards", "destination": "/api/index.py/cards" },
+    { "source": "/api/one-piece/card/:value", "destination": "/api/index.py/card/:value" },
+    { "source": "/api/one-piece/sets", "destination": "/api/index.py/sets" }
+  ]
+}
