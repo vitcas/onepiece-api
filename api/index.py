@@ -14,6 +14,16 @@ JSON_PATH = os.path.join(BASE_DIR, "..", "onepiece_cards.json")
 with open(JSON_PATH, "r", encoding="utf-8") as f:
     ONEPIECE_CARDS = json.load(f)
 
+@app.route("/")
+def root():
+    base_url = request.host_url.rstrip("/")
+    endpoints = [
+        {"name": "Listar cartas", "url": f"{base_url}/api/one-piece/cards?name=luffy"},
+        {"name": "Buscar carta por código/id/nome", "url": f"{base_url}/api/one-piece/card/OP05-119"},
+        {"name": "Listar sets", "url": f"{base_url}/api/one-piece/sets"}
+    ]
+    return render_template("home.html", endpoints=endpoints)
+
 @app.route("/cards")
 def get_cards():
     filters = {
@@ -131,5 +141,6 @@ def add_cache_headers(resp):
     return resp
     
 # não precisa de app.run() – o Vercel já usa a variável app
-#if __name__ == "__main__":
+if __name__ == "__main__":
+    app.run(debug=True)
 #    app.run(port=5001, debug=True)
