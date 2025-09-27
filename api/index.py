@@ -24,7 +24,7 @@ def root():
     ]
     return render_template("home.html", endpoints=endpoints)
 
-@app.route("api/one-piece/cards")
+@app.route("/cards")
 def get_cards():
     filters = {
         "id": request.args.get("id"),
@@ -90,7 +90,7 @@ def get_cards():
         "data": paginated
     })
 
-@app.route("api/one-piece/card/<value>")
+@app.route("/card/<value>")
 def get_card(value):
     value = value.lower()
     for card in ONEPIECE_CARDS:
@@ -98,7 +98,7 @@ def get_card(value):
             return jsonify(card)
     return jsonify({"error": "Card not found"}), 404
 
-@app.route("api/one-piece/sets")
+@app.route("/sets")
 def get_sets():
     sets_dict = {}
     for card in ONEPIECE_CARDS:
