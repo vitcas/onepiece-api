@@ -44,7 +44,7 @@ def playground():
 def last_modified_github():
     try:
         # você pode querer usar autenticação se tiver limites de requisição
-        resp = requests.get(GITHUB_API_URL, params={"per_page": 1})
+        resp = request.get(GITHUB_API_URL, params={"per_page": 1})
         resp.raise_for_status()
         commits = resp.json()
         if not commits:
