@@ -3,6 +3,7 @@ from flask_cors import CORS
 import json
 import math
 import os
+import requests
 from datetime import datetime
 
 app = Flask(__name__)
@@ -44,7 +45,7 @@ def playground():
 def last_modified_github():
     try:
         # você pode querer usar autenticação se tiver limites de requisição
-        resp = request.get(GITHUB_API_URL, params={"per_page": 1})
+        resp = requests.get(GITHUB_API_URL, params={"per_page": 1})
         resp.raise_for_status()
         commits = resp.json()
         if not commits:
