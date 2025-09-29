@@ -23,7 +23,18 @@
     {% endfor %}
 
     <div class="info">
-        <strong>Última atualização do JSON:</strong> {{ last_modified }}
+        <strong>Última atualização do JSON:</strong><span id="lastmod"></span>
     </div>
 </body>
+<script>
+        // Busca a data do último commit do seu backend
+        fetch("/last-modified")
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById("lastmod").textContent = data.lastModified || "indisponível";
+            })
+            .catch(() => {
+                document.getElementById("lastmod").textContent = "erro ao carregar";
+            });
+    </script>
 </html>

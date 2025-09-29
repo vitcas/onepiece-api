@@ -28,12 +28,6 @@ def root():
         {"name": "Listar sets", "url": f"{base_url}/sets"},
         {"name": "Última modificação do JSON", "url": f"{base_url}/last-modified"}
     ]
-    # pegar data do último commit
-    GITHUB_OWNER = "vitcas"
-    GITHUB_REPO = "onepiece-api"
-    GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/commits"
-    resp = requests.get(GITHUB_API_URL, params={"per_page": 1})
-    last_modified = resp.json()[0]["commit"]["committer"]["date"]
     return render_template("home.html", endpoints=endpoints, last_modified=last_modified)
 
 @app.route("/playground")
