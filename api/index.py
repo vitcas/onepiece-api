@@ -28,7 +28,7 @@ def root():
         {"name": "Listar sets", "url": f"{base_url}/sets"},
         {"name": "Última modificação do JSON", "url": f"{base_url}/last-modified"}
     ]
-    return render_template("home.html", endpoints=endpoints, last_modified=last_modified)
+    return render_template("home.html", endpoints=endpoints)
 
 @app.route("/playground")
 def playground():
