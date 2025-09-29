@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Playground One Piece</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-gray-800 p-4 shadow-lg flex justify-between items-center">
+    <h1 class="text-xl font-bold text-purple-400">Playground One Piece</h1>
+    <nav class="space-x-4">
+      <button onclick="loadCards()" class="bg-purple-600 px-3 py-1 rounded hover:bg-purple-700 text-sm">Cartas</button>
+      <button onclick="loadSets()" class="bg-blue-600 px-3 py-1 rounded hover:bg-blue-700 text-sm">Sets</button>
+    </nav>
+  </header>
+
+  <main class="flex-grow container mx-auto p-4 space-y-6">
+
+    <!-- Filtros -->
+    <section class="bg-gray-800 p-3 rounded-xl shadow space-y-3">
+      <h2 class="text-md font-bold text-purple-300">Filtros</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-sm">
+        <input id="filter-name" type="text" placeholder="Nome" class="p-1.5 rounded bg-gray-700 text-gray-200 placeholder-gray-400">
+        <input id="filter-rarity" type="text" placeholder="Raridade" class="p-1.5 rounded bg-gray-700 text-gray-200 placeholder-gray-400">
+        <input id="filter-color" type="text" placeholder="Cor" class="p-1.5 rounded bg-gray-700 text-gray-200 placeholder-gray-400">
+        <input id="filter-type" type="text" placeholder="Tipo" class="p-1.5 rounded bg-gray-700 text-gray-200 placeholder-gray-400">
+        <select id="filter-set" class="p-1.5 rounded bg-gray-700 text-gray-200">
+          <option value="">Todos os Sets</option>
+        </select>
+        <label class="flex items-center space-x-2 text-gray-300 text-sm">
+          <input id="filter-multi-variant" type="checkbox" class="form-checkbox bg-gray-700">
+          <span>Somente cartas com +1 variant</span>
+        </label>
+      </div>
+      <div class="flex gap-3 text-sm">
+        <button onclick="loadCards()" class="bg-green-600 px-3 py-1 rounded hover:bg-green-700">Buscar</button>
+        <button onclick="resetFilters()" class="bg-gray-600 px-3 py-1 rounded hover:bg-gray-700">Limpar</button>
+      </div>
+    </section>
+
+    <!-- Contador -->
+    <section id="counter" class="text-sm text-gray-300"></section>
+
+    <!-- Resultados -->
+    <section id="results" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></section>
+
+    <!-- Paginação -->
+    <section id="pagination" class="flex justify-center gap-2 mt-4"></section>
+  </main>
+
+  <script>
+    let currentPage = 1;
+    let currentMode = "cards";
+    let setsCache = [];
+
+    function buildUrl() {
+      let url = "";
+      
+      if (currentMode === "cards") {
+        url = `/cards?page=${currentPage}&limit=20`; // <-- corrigido para /cards
+        const filters = ["name","rarity","color","type"];
+        filters.forEach(f => {
+          const val = document.getElementById("filter-" + f).value;
+          if (val) url += `&${f}=${encodeURIComponent(val)}`;
+        });
+        const setVal = document.getElementById("filter-set").value;
+        if (setVal) url += `&set_groupId=${encodeURIComponent(setVal)}`;
+        const multiVariant = document.getElementById("filter-multi-variant").checked;
+        if (multiVariant) url += `&multi_variant=1`;
+      } else {
+        url = `/sets?page=${currentPage}&limit=100`; // <-- corrigido para /sets
+      }
+      return url;
+    }
+
+    async function loadCards() {
+      currentMode = "cards";
+      const res = await fetch(buildUrl());
+      const data = await res.json();
+      renderResults(data);
+      renderPagination(data);
+      renderCounter(data);
+    }
+
+    async function loadSets() {
+      currentMode = "sets";
+      currentPage = 1;
+      const res = await fetch(buildUrl());
+      const data = await res.json();
+      renderResults(data);
+      renderPagination(data);
+    }
+
+    // popula select com sets
+    async function loadSetsList() {
+      const res = await fetch("/sets?page=1&limit=200"); // <-- já certo
+      const data = await res.json();
+      setsCache = data.data || [];
+      const select = document.getElementById("filter-set");
+      setsCache.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.groupId;
+        opt.textContent = `${s.beauty_name} (${s.release_date})`;
+        select.appendChild(opt);
+      });
+    }
+
+    function renderCounter(data) {
+      const el = document.getElementById("counter");
+      el.textContent = `Mostrando ${data.data.length} de ${data.total} cartas (página ${data.page}/${data.totalPages})`;
+    }
+
+    function renderResults(data) {
+      const container = document.getElementById("results");
+      container.innerHTML = "";
+
+      if (currentMode === "cards") {
+        data.data.forEach(card => {
+          const el = document.createElement("div");
+          el.className = "bg-gray-800 rounded-lg shadow p-4 flex flex-col";
+
+          // set detalhado
+          let setHtml = "";
+          if (card.set) {
+            setHtml = `
+              <h4 class="font-semibold mt-2 text-blue-400">Set:</h4>
+              <ul class="text-xs space-y-1">
+                <li><span class="font-semibold">Nome:</span> ${card.set.name ?? "-"}</li>
+                <li><span class="font-semibold">Beauty Name:</span> ${card.set.beauty_name ?? "-"}</li>
+                <li><span class="font-semibold">groupId:</span> ${card.set.groupId ?? "-"}</li>
+                <li><span class="font-semibold">Data de Lançamento:</span> ${card.set.release_date ?? "-"}</li>
+              </ul>
+            `;
+          }
+
+          // variants filtrados
+          let variantsHtml = "";
+          if (card.variants && card.variants.length > 0) {
+            variantsHtml = "<h4 class='font-semibold mt-2 text-purple-400'>Variants:</h4><ul class='text-xs space-y-1'>";
+            card.variants.forEach(v => {
+              variantsHtml += `
+                <li class="border-b border-gray-700 pb-1">
+                  <div><span class="font-semibold">tcgplayerId:</span> ${v.tcgplayerId ?? "-"}</div>
+                  <div><span class="font-semibold">juSTname:</span> ${v.juSTname ?? "-"}</div>
+                  <div><span class="font-semibold">groupId:</span> ${v.groupId ?? "-"}</div>
+                  <div><span class="font-semibold">price:</span> <span class="text-green-400 font-bold">${v.price ?? "-"}</span></div>
+                  <div><span class="font-semibold">printing:</span> ${v.printing ?? "-"}</div>
+                  <div><span class="font-semibold">avgPrice:</span> ${v.avgPrice ?? "-"}</div>
+                  <div><span class="font-semibold">marketPrice:</span> ${v.marketPrice ?? "-"}</div>
+                </li>
+              `;
+            });
+            variantsHtml += "</ul>";
+          }
+
+          el.innerHTML = `
+            <img src="${card.images?.small}" alt="${card.name}" class="rounded mb-2 h-64 object-contain mx-auto">
+            <h3 class="font-bold text-lg">${card.name}</h3>
+            <p class="text-sm text-gray-400">${card.code} | ${card.rarity}</p>
+            <p class="text-sm">ID: ${card.id}</p>
+            ${setHtml}
+            ${variantsHtml}
+            <p class="text-sm mt-2">Notes: ${card.notes && card.notes.length ? card.notes.join(", ") : "-"}</p>
+          `;
+          container.appendChild(el);
+        });
+      } else {
+        data.data.forEach(set => {
+          const el = document.createElement("div");
+          el.className = "bg-gray-800 rounded-lg shadow p-3 flex flex-col";
+          el.innerHTML = `
+            <h3 class="font-bold text-sm">${set.name}</h3>
+            <p class="text-xs text-gray-400">${set.beauty_name}</p>
+            <p class="text-xs">groupId: ${set.groupId || "-"}</p>
+            <p class="text-xs">Lançamento: ${set.release_date || "-"}</p>
+          `;
+          container.appendChild(el);
+        });
+      }
+    }
+
+    function renderPagination(data) {
+      const container = document.getElementById("pagination");
+      container.innerHTML = "";
+
+      for (let i = 1; i <= data.totalPages; i++) {
+        const btn = document.createElement("button");
+        btn.className = `px-2 py-1 rounded text-sm ${i === data.page ? "bg-purple-600" : "bg-gray-700 hover:bg-gray-600"}`;
+        btn.textContent = i;
+        btn.onclick = () => {
+          currentPage = i;
+          if (currentMode === "cards") loadCards();
+          else loadSets();
+        };
+        container.appendChild(btn);
+      }
+    }
+
+    function resetFilters() {
+      ["name","rarity","color","type"].forEach(f => {
+        document.getElementById("filter-" + f).value = "";
+      });
+      document.getElementById("filter-set").value = "";
+      document.getElementById("filter-multi-variant").checked = false;
+      currentPage = 1;
+      loadCards();
+    }
+
+    // Carrega sets no select + cartas ao abrir
+    loadSetsList().then(loadCards);
+  </script>
+</body>
+</html>

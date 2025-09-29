@@ -3,6 +3,7 @@ from flask_cors import CORS
 import json
 import math
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)  # habilita CORS para todas as rotas
@@ -18,11 +19,23 @@ with open(JSON_PATH, "r", encoding="utf-8") as f:
 def root():
     base_url = request.host_url.rstrip("/")
     endpoints = [
-        {"name": "Listar cartas", "url": f"{base_url}/api/one-piece/cards?name=luffy"},
-        {"name": "Buscar carta por código/id/nome", "url": f"{base_url}/api/one-piece/card/OP05-119"},
-        {"name": "Listar sets", "url": f"{base_url}/api/one-piece/sets"}
+        {"name": "Listar cartas", "url": f"{base_url}/cards?name=luffy"},
+        {"name": "Buscar carta por código/id/nome", "url": f"{base_url}/card/OP05-119"},
+        {"name": "Listar sets", "url": f"{base_url}/sets"},
+        {"name": "Última modificação do JSON", "url": f"{base_url}/last-modified"}
     ]
-    return render_template("home.html", endpoints=endpoints)
+
+    try:
+        mtime = os.path.getmtime(JSON_PATH)
+        last_modified = datetime.fromtimestamp(mtime).strftime("%d/%m/%Y %H:%M:%S")
+    except Exception:
+        last_modified = "Indisponível"
+
+    return render_template("home.html", endpoints=endpoints, last_modified=last_modified)
+
+@app.route("/playground")
+def playground():
+    return render_template("playground.html")
 
 @app.route("/cards")
 def get_cards():
@@ -134,6 +147,15 @@ def get_sets():
         "totalPages": total_pages,
         "data": paginated
     })
+
+@app.route("/last-modified")
+def last_modified():
+    try:
+        mtime = os.path.getmtime(JSON_PATH)
+        last_modified = datetime.fromtimestamp(mtime).isoformat()
+        return jsonify({"lastModified": last_modified})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.after_request
 def add_cache_headers(resp):

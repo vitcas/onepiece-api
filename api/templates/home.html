@@ -9,6 +9,7 @@
         a { color: #58a6ff; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .endpoint { margin: 1rem 0; padding: 1rem; background: #161b22; border-radius: 8px; }
+        .info { margin-top: 2rem; font-size: 0.9rem; color: #8b949e; }
     </style>
 </head>
 <body>
@@ -20,5 +21,9 @@
             <a href="{{ ep.url }}" target="_blank">{{ ep.url }}</a>
         </div>
     {% endfor %}
+
+    <div class="info">
+        <strong>Última atualização do JSON:</strong> {{ last_modified }}
+    </div>
 </body>
 </html>
