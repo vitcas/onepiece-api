@@ -28,13 +28,6 @@ def root():
         {"name": "Listar sets", "url": f"{base_url}/sets"},
         {"name": "Última modificação do JSON", "url": f"{base_url}/last-modified"}
     ]
-
-    try:
-        mtime = os.path.getmtime(JSON_PATH)
-        last_modified = datetime.fromtimestamp(mtime).strftime("%d/%m/%Y %H:%M:%S")
-    except Exception:
-        last_modified = "Indisponível"
-
     return render_template("home.html", endpoints=endpoints, last_modified=last_modified)
 
 @app.route("/playground")
