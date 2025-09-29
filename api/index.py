@@ -8,6 +8,9 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)  # habilita CORS para todas as rotas
 
+GITHUB_OWNER = "vitcas"
+GITHUB_REPO = "onepiece-api"
+GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/commits"
 # garante que o arquivo JSON seja lido mesmo no ambiente serverless
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 JSON_PATH = os.path.join(BASE_DIR, "..", "onepiece_cards.json")
@@ -36,6 +39,24 @@ def root():
 @app.route("/playground")
 def playground():
     return render_template("playground.html")
+
+@app.route("/last-modified")
+def last_modified_github():
+    try:
+        # você pode querer usar autenticação se tiver limites de requisição
+        resp = requests.get(GITHUB_API_URL, params={"per_page": 1})
+        resp.raise_for_status()
+        commits = resp.json()
+        if not commits:
+            return jsonify({"error": "No commits found"}), 404
+
+        latest = commits[0]
+        # a data do commit do “committer” costuma refletir quando foi realmente gravado (push) no GitHub
+        # você pode também usar latest["commit"]["author"]["date"], dependendo do que quiser exibir
+        date = latest["commit"]["committer"]["date"]
+        return jsonify({"lastModified": date})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/cards")
 def get_cards():
@@ -147,15 +168,6 @@ def get_sets():
         "totalPages": total_pages,
         "data": paginated
     })
-
-@app.route("/last-modified")
-def last_modified():
-    try:
-        mtime = os.path.getmtime(JSON_PATH)
-        last_modified = datetime.fromtimestamp(mtime).isoformat()
-        return jsonify({"lastModified": last_modified})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 @app.after_request
 def add_cache_headers(resp):
