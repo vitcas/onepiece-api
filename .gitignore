@@ -1,0 +1,4 @@
+# Ignorar pasta de backups
+bkp/
+*/bkp/
+*/__pycache__/

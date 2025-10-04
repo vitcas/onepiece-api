@@ -26,13 +26,10 @@ def root():
         {"name": "Listar cartas", "url": f"{base_url}/cards?name=luffy"},
         {"name": "Buscar carta por código/id/nome", "url": f"{base_url}/card/OP05-119"},
         {"name": "Listar sets", "url": f"{base_url}/sets"},
+        {"name": "Listar cartas do set", "url": f"{base_url}/set/17675"},
         {"name": "Última modificação do JSON", "url": f"{base_url}/last-modified"}
     ]
     return render_template("home.html", endpoints=endpoints)
-
-@app.route("/playground")
-def playground():
-    return render_template("playground.html")
 
 @app.route("/last-modified")
 def last_modified_github():
@@ -129,38 +126,76 @@ def get_card(value):
 @app.route("/sets")
 def get_sets():
     sets_dict = {}
+
     for card in ONEPIECE_CARDS:
         set_info = card.get("set")
-        if set_info and "groupId" in set_info:
-            gid = set_info["groupId"]
-            if gid not in sets_dict:
-                sets_dict[gid] = set_info
+        if not set_info or "groupId" not in set_info:
+            continue
 
-    sets_list = list(sets_dict.values())
-    sets_list.sort(key=lambda x: (x.get("beauty_name") or "").lower())
+        gid = set_info["groupId"]
 
-    try:
-        limit = min(int(request.args.get("limit", 25)), 100)
-    except ValueError:
-        limit = 25
-    try:
-        page = max(int(request.args.get("page", 1)), 1)
-    except ValueError:
-        page = 1
+        # inicializa o set se ainda não existir
+        if gid not in sets_dict:
+            sets_dict[gid] = {
+                **set_info,
+                "card_count": 0
+            }
 
-    total = len(sets_list)
-    total_pages = math.ceil(total / limit) if limit > 0 else 1
+        sets_dict[gid]["card_count"] += 1
 
-    start = (page - 1) * limit
-    end = start + limit
-    paginated = sets_list[start:end]
+        # caso especial: groupId 17675 → guardar todos os "names" distintos
+        if gid == 17675:
+            if "names" not in sets_dict[gid]:
+                sets_dict[gid]["names"] = set()
+            name_val = set_info.get("name")
+            if name_val:
+                sets_dict[gid]["names"].add(name_val)
+
+    # converter names (set → lista)
+    for s in sets_dict.values():
+        if "names" in s:
+            s["names"] = sorted(list(s["names"]))
+
+    # ordena por set_code (alfabético)
+    sets_list = sorted(
+        sets_dict.values(),
+        key=lambda x: (x.get("set_code") or "").lower()
+    )
+
+    return jsonify(sets_list)
+
+@app.route("/set/<group_id>")
+def get_set_cards(group_id):
+    # condição especial: 17675 → inclui todas as variações dentro do mesmo grupo
+    if str(group_id) == "17675":
+        filtered = [
+            card for card in ONEPIECE_CARDS
+            if str(card.get("set", {}).get("groupId", "")) == "17675"
+        ]
+    else:
+        filtered = [
+            card for card in ONEPIECE_CARDS
+            if str(card.get("set", {}).get("groupId", "")) == str(group_id)
+        ]
+
+    if not filtered:
+        return jsonify({"error": f"No cards found for set groupId '{group_id}'"}), 404
+
+    # ordena por código (para consistência)
+    filtered.sort(key=lambda c: (c.get("code") or "").lower())
+
+    total = len(filtered)
+    limit = total  # mostra todas as cartas disponíveis
+    page = 1
+    total_pages = 1
 
     return jsonify({
+        "groupId": group_id,
         "page": page,
         "limit": limit,
         "total": total,
         "totalPages": total_pages,
-        "data": paginated
+        "data": filtered
     })
 
 @app.after_request
@@ -170,5 +205,5 @@ def add_cache_headers(resp):
     
 # não precisa de app.run() – o Vercel já usa a variável app
 if __name__ == "__main__":
-    app.run(debug=True)
-#    app.run(port=5001, debug=True)
+    #app.run(debug=True)
+    app.run(port=5001, debug=True)
